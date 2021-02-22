@@ -34,8 +34,34 @@ class Lattice:
         a = (0, 0)
         print(self.states[a])
 
+    def bc(self, x):
+        if x >= self.n:
+            return x - self.n
+        if x < 0:
+            return x + self.n
+        else:
+            return x
+
     def energy(self):
         h = 0
+        """ Full energy
+        s = self.states.ravel()
+        for i in s:
+            h -= 0.5 * self.j * np.sum(np.multiply(i, s))
+        """
+        # FIX: This doesn't work
+        cutoff = 1
+        for i in range(self.n):
+            for j in range(self.n):
+                for k in range(0, cutoff + 1):
+                    for kk in range(0, cutoff - k + 1):
+                        if (k + kk) == 0:
+                            continue
+                        h -= 0.5 * self.j * self.states[i, j] * self.states[self.bc(i + k), self.bc(j + kk)]
+                        h -= 0.5 * self.j * self.states[i, j] * self.states[self.bc(i + k), self.bc(j - kk)]
+                        h -= 0.5 * self.j * self.states[i, j] * self.states[self.bc(i - k), self.bc(j + kk)]
+                        h -= 0.5 * self.j * self.states[i, j] * self.states[self.bc(i - k), self.bc(j - kk)]
+        """ Nearest neighbour
         for i in range(self.n):
             for j in range(self.n):
                 left = (i - 1 if i > 0 else self.n - 1)
@@ -47,6 +73,7 @@ class Lattice:
                         self.states[left, j] + self.states[right, j] +
                         self.states[i, up] + self.states[i, down]
                 )
+        """
         return h
 
     def visualize(self, kind, filename=""):
@@ -67,7 +94,7 @@ class Lattice:
                     print(str(int(self.states[i, j])) + " ", end='')
                 print()
         elif kind == "cool":
-            sns.heatmap(self.states)
+            sns.heatmap(self.states, cbar=False)
             if filename:
                 plt.savefig(filename)
             else:

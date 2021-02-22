@@ -10,11 +10,11 @@ import seaborn as sns
 
 def test(t):
     res = []
-    for i in range(10):
-        a = ising.Lattice(20)
+    for i in range(20):
+        a = ising.Lattice(8)
         a.shuffle()
-        mc.sim(a, 500, t)
-        res.append([t, mc.sim(a, 500, t)])
+        mc.sim(a, 100, t)
+        res.append([t, mc.sim(a, 100, t)])
         del a
     print(t)
     return res
@@ -22,7 +22,7 @@ def test(t):
 
 def magnetization_map():
     with Pool(8) as p:
-        a = p.map(test, np.arange(0.1, 10.1, 0.25))
+        a = p.map(test, np.arange(0.1, 20.1, 0.5))
     T = []
     m = []
     for res in a:
@@ -36,10 +36,10 @@ def magnetization_map():
 def coolplot(n, t):
     a = ising.Lattice(n)
     a.shuffle()
-    mc.sim(a, 5000, t)
+    mc.sim(a, 2000, t)
     a.visualize("cool", filename="")
 
 
 if __name__ == '__main__':
     magnetization_map()
-    # coolplot(20, 0.1)
+    # coolplot(8, 1)
