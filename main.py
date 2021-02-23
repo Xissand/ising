@@ -7,6 +7,47 @@ import matplotlib.pyplot as plt
 from multiprocessing import Pool
 
 
+def c(t):
+    res = []
+    for run in range(20):
+        en = []
+        a = ising.Lattice(16)
+        a.shuffle()
+        mc.sim(a, 20000, t)
+        for i in range(50000):
+            mc.sim(a, 1, t)
+            e = a.energy()
+            en.append(e)
+        res.append([t, np.mean(en), np.mean(np.square(en))])
+    del a
+    print(t)
+    return res
+
+
+def specific_map():
+    with Pool(8) as p:
+        a = p.map(c, np.arange(1.0, 4.0, 0.1))
+    t = []
+    e = []
+    de = []
+    for res in a:
+        for r in res:
+            t.append(r[0])
+            e.append(r[1])
+            de.append(r[2])
+    tt = np.arange(1.0, 4.0, 0.05)
+    e2 = np.zeros(len(tt))
+    ee2 = np.zeros(len(tt))
+    for num, temp in enumerate(tt):
+        for i, j, k in zip(t, e, de):
+            if np.abs(i - temp) < 0.01:
+                e2[num] += j / 10
+                ee2[num] += k / 10
+    ch = (ee2 - e2 ** 2) / tt
+    plt.scatter(tt, ch, s=40, facecolor='none', edgecolors='blue')
+    plt.show()
+
+
 def test(t):
     res = []
     for i in range(20):
@@ -35,10 +76,11 @@ def magnetization_map():
 def coolplot(n, t):
     a = ising.Lattice(n)
     a.shuffle()
-    mc.sim(a, 20000, t)
+    mc.sim(a, 100000, t)
     a.visualize("cool", filename="")
 
 
 if __name__ == '__main__':
     # magnetization_map()
-    coolplot(16, 2.5)
+    # coolplot(100, 0.1)
+    specific_map()
