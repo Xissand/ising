@@ -5,6 +5,7 @@ import ising
 import numpy as np
 import matplotlib.pyplot as plt
 from multiprocessing import Pool
+from timeit import default_timer as timer
 
 
 def c(t):
@@ -76,11 +77,14 @@ def magnetization_map():
 def coolplot(n, t):
     a = ising.Lattice(n)
     a.shuffle()
-    mc.sim(a, 100000, t)
+    b = mc.sim(a, int(1e5), t, ave=True)
     a.visualize("cool", filename="")
+    for name, value in zip(a.observables.split(" "),b):
+        print(f"{name:6} {value:.4f}")
 
 
 if __name__ == '__main__':
     # magnetization_map()
-    # coolplot(100, 0.1)
-    specific_map()
+    coolplot(50, 0.1)
+
+    # specific_map()

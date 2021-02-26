@@ -1,9 +1,9 @@
 import random
 import numpy as np
-
+from scipy.ndimage.filters import uniform_filter1d
 
 # Note: maybe this should be provided by the model class
-def update(model: object, t: float) -> None:
+def _update(model: object, t: float) -> None:
     """Performs a MC move
     
     Chooses a random state to change, measures energy before and after. If energy change is negative, the move is 
@@ -13,12 +13,11 @@ def update(model: object, t: float) -> None:
         model: model object
         t: temperature
     """
-    states = model.states.ravel()
-    size = len(states)
+    size = model.n**2
     i = random.randint(0, size - 1)
-    e0 = model.spin_energy(i)
-    states[i] *= -1
-    e1 = model.spin_energy(i)
+    e0 = model.energy
+    model.move(i)
+    e1 = model.energy
     if e1 - e0 < 0:
         # print("Accepted")
         return
@@ -28,27 +27,40 @@ def update(model: object, t: float) -> None:
             # print("Accepted")
             return
         else:
-            states[i] *= -1
+            model.move(i)
 
 
-def sim(model: object, nsteps: int, t: float):
+def sim(model: object, nsteps: int, t: float, freq: int = 10000, ave: bool = False):
     """Performs Monte Carlo simulations
 
     Args:
         model: the model to be simulated
         nsteps: number of steps
         t: temperature
+        freq: number of steps between console output. Set to 0 to disable output.
 
     Returns:
         nothing good
     """
     random.seed()
-    # TODO: move magnetism calculation to main
-    d = model.states.flatten()
+    if freq:
+        print("Step "+model.observables)
+    if ave:
+        log = []
     for i in range(nsteps):
-        update(model, t)
-        d += model.states.flatten()
-        # print(f"Energy: {model.energy(): .4}")
-    d /= nsteps
-    # print("AVE:  " + str(d.mean()))
-    return d.mean()
+        _update(model, t)
+        if freq:
+            if i % freq == 0:
+                v = model.observe()
+                print(f"{i:>12}", end="")
+                for value in v:
+                    print(f"{value:>9}", end="")
+                print()
+        if ave:
+            v = model.observe()
+            log.append(v)
+
+    if ave:
+        averages = np.mean(log, axis=0)
+        return averages
+

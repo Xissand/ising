@@ -1,6 +1,7 @@
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+from numba import jit
 
 
 class Lattice:
@@ -9,9 +10,11 @@ class Lattice:
     Implements an Ising model in a field for Monte Carlo with a Hamiltonian H = -J sum_{ij}(s_i,s_j) - h sum_{j}(s_j)
     where s_i is an individual spin on the lattice, h is the field, and J is the interaction coefficient
 
+    Note: external field not implemented
+
     Attributes:
         n: size of the nxn lattice
-        states: an nxn ndarray of spins
+        observables: names of values that the model can report
     """
 
     def __init__(self, n: int = 2, h: float = 0.0, j: float = 1.0) -> None:
@@ -22,16 +25,24 @@ class Lattice:
             h: external field
             j: spin-spin interaction constant
         """
+        if h != 0:
+            raise NotImplementedError("External field not yet implemented")
         self.n = n
         self.h = h
         self.j = j
+        self.energy = 0
+        self.magnetism = n ** 2
+        self.observables = "TotEng AveEng Mgnt"
         self.states = np.ones((self.n, self.n))
+        self._update_energy("full")
 
     def shuffle(self) -> None:
         """Randomizes spin states"""
         for i in range(self.n):
             for j in range(self.n):
                 self.states[i, j] = np.random.choice([-1, 1])
+        self._update_magnetism()
+        self._update_energy("full")
 
     def bc(self, x: int) -> int:
         """Apply periodic boundaries to a coordinate
@@ -49,65 +60,73 @@ class Lattice:
         else:
             return x
 
-    def energy(self) -> float:
-        """Calculates lattice energy
+    def _update_energy(self, kind="full", i=0, j=0) -> float:
+        """Updates lattice energy
 
-        Calculates energy of the lattice according to either the full hamiltonian, nearest neighbours or a cutoff.
-        Deprecated in favor of spin_energy
+        Recalculates lattice energy based on nearest neighbours interactinos either from zero, of update the previous
+        value based on the change made
 
-        Returns: Energy of the lattice
+        Args:
+            kind: "full" to recalculate energy. "single" to update it
+            i, j: position of the flipped spin. used when kind is "single"
 
+        Returns:
+            Energy of the lattice
         """
-        h = 0
-        """ Full energy
-        s = self.states.ravel()
-        for i in s:
-            h -= 0.5 * self.j * np.sum(np.multiply(i, s))
-        """
-        """ Cutoff
-        # FIX: This doesn't work
-        cutoff = 1
-        for i in range(self.n):
-            for j in range(self.n):
-                for k in range(0, cutoff + 1):
-                    for kk in range(0, cutoff - k + 1):
-                        if (k + kk) == 0:
-                            continue
-                        h -= 0.5 * self.j * self.states[i, j] * self.states[self.bc(i + k), self.bc(j + kk)]
-                        h -= 0.5 * self.j * self.states[i, j] * self.states[self.bc(i + k), self.bc(j - kk)]
-                        h -= 0.5 * self.j * self.states[i, j] * self.states[self.bc(i - k), self.bc(j + kk)]
-                        h -= 0.5 * self.j * self.states[i, j] * self.states[self.bc(i - k), self.bc(j - kk)]
-        """  # Nearest neighbour
-        for i in range(self.n):
-            for j in range(self.n):
-                left = (i - 1 if i > 0 else self.n - 1)
-                right = (i + 1 if i < self.n - 1 else 0)
-                up = (j + 1 if j < self.n - 1 else 0)
-                down = (j - 1 if j > 0 else self.n - 1)
+        if kind == "full":
+            h = 0
+            for i in range(self.n):
+                for j in range(self.n):
+                    left = (i - 1 if i > 0 else self.n - 1)
+                    right = (i + 1 if i < self.n - 1 else 0)
+                    up = (j + 1 if j < self.n - 1 else 0)
+                    down = (j - 1 if j > 0 else self.n - 1)
 
-                h -= 0.5 * self.j * self.states[i, j] * (self.states[left, j] + self.states[right, j] +
-                                                         self.states[i, up] + self.states[i, down])
+                    h -= 0.5 * self.j * self.states[i, j] * (self.states[left, j] + self.states[right, j] +
+                                                             self.states[i, up] + self.states[i, down])
+        elif kind == "single":
+            h = self.energy
+            delta = 2 * self._spin_energy(i, j)
+            h += delta
 
+        self.energy = h
         return h
 
-    # TODO: rename this to something more generalized
-    # TODO: create a general model class
-    def spin_energy(self, k: int) -> float:
+    def _update_magnetism(self) -> float:
+        """Updates average magnetism of the lattice"""
+        self.magnetism = self.states.mean()
+        return self.magnetism
+
+    def _spin_energy(self, i: int, j: int) -> float:
         """Calculate energy of one spin
 
         Args:
-            k: 1d number of spin from a flattened array
+            i,j : spin position
 
         Returns:
-            Energy of the spin, considering only nearest neighbour interactions.
+            Energy of the spin
         """
-        i = k // self.n
-        j = k % self.n
-
         delta = -self.j * self.states[i, j] * (self.states[self.bc(i - 1), j] + self.states[self.bc(i + 1), j] +
                                                self.states[i, self.bc(j + 1)] + self.states[i, self.bc(j - 1)])
 
         return delta
+
+    def move(self, spin) -> None:
+        """Performs a mc move for the lattice
+
+        Flips the specified spin, update lattice energy and magnetism
+
+        Args:
+            spin: number of the spin in a flattened array of states
+        """
+        i = spin // self.n
+        j = spin % self.n
+        self.states[i, j] *= -1
+        self._update_energy("single", i, j)
+        self._update_magnetism()
+
+    def observe(self):
+        return self.energy, self.energy / self.n ** 2, self.magnetism
 
     def visualize(self, kind: str, filename: str = "") -> None:
         """Visualizes the lattice
