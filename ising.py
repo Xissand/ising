@@ -2,8 +2,20 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 from numba import jit
+from numba import int32, float64
+from numba.experimental import jitclass
+
+spec = [
+    ('n', int32),
+    ('h', float64),
+    ('j', float64),
+    ('energy', float64),
+    ('magnetism', float64),
+    ('states', float64[:, :]),
+]
 
 
+@jitclass(spec)
 class Lattice:
     """Implements a 2d Ising lattice
 
@@ -32,7 +44,7 @@ class Lattice:
         self.j = j
         self.energy = 0
         self.magnetism = n ** 2
-        self.observables = "TotEng AveEng Mgnt"
+        # self.observables = "TotEng AveEng Mgnt"
         self.states = np.ones((self.n, self.n))
         self._update_energy("full")
 
@@ -40,7 +52,7 @@ class Lattice:
         """Randomizes spin states"""
         for i in range(self.n):
             for j in range(self.n):
-                self.states[i, j] = np.random.choice([-1, 1])
+                self.states[i, j] = np.random.choice(np.array([-1, 1]))
         self._update_magnetism()
         self._update_energy("full")
 
@@ -128,7 +140,7 @@ class Lattice:
     def observe(self):
         return self.energy, self.energy / self.n ** 2, self.magnetism
 
-    def visualize(self, kind: str, filename: str = "") -> None:
+    def visualize(self, kind: str = "cool", filename: str = "") -> None:
         """Visualizes the lattice
 
         Visualizes the lattice state either in terminal or graphically via seaborn heatmap.
@@ -140,13 +152,15 @@ class Lattice:
         Raises:
             ValueError: incorrect plot kind
         """
+        return self.states
+        # TODO: Fix this not being possible due to numba
         if kind == "basic":
             for i in range(self.n):
                 for j in range(self.n):
                     print(str(int(self.states[i, j])) + " ", end='')
                 print()
 
-        elif kind == "cool":
+        if kind == "cool":
             sns.heatmap(self.states, vmin=-1, vmax=1)
             if filename:
                 plt.savefig(filename)

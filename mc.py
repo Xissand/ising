@@ -43,8 +43,9 @@ def sim(model: object, nsteps: int, t: float, freq: int = 10000, ave: bool = Fal
         nothing good
     """
     random.seed()
-    if freq:
-        print("Step "+model.observables)
+    #print(nsteps)
+    #if freq:
+    #    print("Step "+model.observables)
     if ave:
         log = []
     for i in range(nsteps):

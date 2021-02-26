@@ -5,6 +5,7 @@ import ising
 import numpy as np
 import matplotlib.pyplot as plt
 from multiprocessing import Pool
+import seaborn as sns
 from timeit import default_timer as timer
 
 
@@ -52,10 +53,12 @@ def specific_map():
 def test(t):
     res = []
     for i in range(20):
-        a = ising.Lattice(16)
+        a = ising.Lattice(20)
         a.shuffle()
-        mc.sim(a, 20000, t)
-        res.append([t, mc.sim(a, 2000, t)])
+        mc.sim(a, 100000, t, freq=0)
+        b = mc.sim(a, 100000, t, freq=0, ave=True)
+        m = float(b[2])
+        res.append([t, m])
         del a
     print(t)
     return res
@@ -78,13 +81,17 @@ def coolplot(n, t):
     a = ising.Lattice(n)
     a.shuffle()
     b = mc.sim(a, int(1e5), t, ave=True)
-    a.visualize("cool", filename="")
-    for name, value in zip(a.observables.split(" "),b):
-        print(f"{name:6} {value:.4f}")
+
+    sns.heatmap(a.visualize(), vmin=-1, vmax=1)
+    plt.show()
+
+    print(b[0])
+    # for name, value in zip(a.observables.split(" "),b):
+    #    print(f"{name:6} {value:.4f}")
 
 
 if __name__ == '__main__':
-    # magnetization_map()
-    coolplot(50, 0.1)
+    magnetization_map()
+    # coolplot(50, 0.1)
 
     # specific_map()
