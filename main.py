@@ -6,47 +6,39 @@ import numpy as np
 import matplotlib.pyplot as plt
 from multiprocessing import Pool
 import seaborn as sns
+import matplotlib.animation as animation
 from timeit import default_timer as timer
 
 
 def c(t):
     res = []
-    for run in range(20):
-        en = []
+    for run in range(10):
         a = ising.Lattice(16)
         a.shuffle()
-        mc.sim(a, 20000, t)
-        for i in range(50000):
-            mc.sim(a, 1, t)
-            e = a.energy()
-            en.append(e)
-        res.append([t, np.mean(en), np.mean(np.square(en))])
+        mc.sim(a, 50000, t, freq=0)
+        v, dv = mc.sim(a, 100000, t, ave=True, freq=0)
+        res.append([t, v[1], v[0]])
     del a
     print(t)
     return res
 
 
 def specific_map():
-    with Pool(8) as p:
-        a = p.map(c, np.arange(1.0, 4.0, 0.1))
-    t = []
+    tt = []
+    e2 = []
     e = []
-    de = []
-    for res in a:
-        for r in res:
-            t.append(r[0])
-            e.append(r[1])
-            de.append(r[2])
-    tt = np.arange(1.0, 4.0, 0.05)
-    e2 = np.zeros(len(tt))
-    ee2 = np.zeros(len(tt))
-    for num, temp in enumerate(tt):
-        for i, j, k in zip(t, e, de):
-            if np.abs(i - temp) < 0.01:
-                e2[num] += j / 10
-                ee2[num] += k / 10
-    ch = (ee2 - e2 ** 2) / tt
-    plt.scatter(tt, ch, s=40, facecolor='none', edgecolors='blue')
+    with Pool(8) as p:
+        a = p.map(c, np.arange(1.0, 4.0, 0.05))
+    for aa in a:
+        for v in aa:
+            tt.append(v[0])
+            e2.append(v[1])
+            e.append(v[2])
+    tt = np.array(tt)
+    e2 = np.array(e2)
+    e = np.array(e)
+    ch = (e2 - e ** 2) / tt ** 2
+    plt.scatter(tt, ch, s=40, facecolor="none", edgecolors="blue")
     plt.show()
 
 
@@ -56,8 +48,8 @@ def test(t):
         a = ising.Lattice(20)
         a.shuffle()
         mc.sim(a, 100000, t, freq=0)
-        b = mc.sim(a, 100000, t, freq=0, ave=True)
-        m = float(b[2])
+        b, bb = mc.sim(a, 100000, t, freq=0, ave=True)
+        m = float(b[3])
         res.append([t, m])
         del a
     print(t)
@@ -73,14 +65,14 @@ def magnetization_map():
         for r in res:
             t.append(r[0])
             m.append(r[1])
-    plt.scatter(t, m, s=40, facecolor='none', edgecolors='blue')
+    plt.scatter(t, m, s=40, facecolor="none", edgecolors="blue")
     plt.show()
 
 
 def coolplot(n, t):
     a = ising.Lattice(n)
     a.shuffle()
-    b = mc.sim(a, int(1e5), t, ave=True)
+    b, bb = mc.sim(a, int(1e6), t, ave=True)
 
     sns.heatmap(a.visualize(), vmin=-1, vmax=1)
     plt.show()
@@ -90,8 +82,22 @@ def coolplot(n, t):
     #    print(f"{name:6} {value:.4f}")
 
 
-if __name__ == '__main__':
-    magnetization_map()
-    # coolplot(50, 0.1)
+def anime(n, t, steps=int(1e5), freq=1):
+    a = ising.Lattice(n)
+    a.shuffle()
+    fig = plt.figure()
+    frames = []
+    for nsteps in range(steps // freq):
+        mc.sim(a, freq, t, freq=False)
+        frame = plt.imshow(a.visualize(), animated=True, vmin=-1, vmax=1, cmap="afmhot")
+        frames.append([frame])
+    ani = animation.ArtistAnimation(fig, frames, interval=16.67, blit=True, repeat_delay=1000)
+    ani.save("results/animation.mp4", fps=60)
+    plt.show()
 
+
+if __name__ == "__main__":
+    # magnetization_map()
+    # coolplot(50, 0.1)
+    anime(100, 0.1, freq=1000, steps=int(2e6))
     # specific_map()

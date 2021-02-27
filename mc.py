@@ -2,18 +2,19 @@ import random
 import numpy as np
 from scipy.ndimage.filters import uniform_filter1d
 
+
 # Note: maybe this should be provided by the model class
 def _update(model: object, t: float) -> None:
     """Performs a MC move
-    
-    Chooses a random state to change, measures energy before and after. If energy change is negative, the move is 
+
+    Chooses a random state to change, measures energy before and after. If energy change is negative, the move is
     accepted, otherwise a move's probability exp(-dE/kT) is compared to a uniformly distributed float.
-    
+
     Args:
         model: model object
         t: temperature
     """
-    size = model.n**2
+    size = model.n ** 2
     i = random.randint(0, size - 1)
     e0 = model.energy
     model.move(i)
@@ -43,9 +44,9 @@ def sim(model: object, nsteps: int, t: float, freq: int = 10000, ave: bool = Fal
         nothing good
     """
     random.seed()
-    #print(nsteps)
-    #if freq:
-    #    print("Step "+model.observables)
+    # print(nsteps)
+    if freq:
+        print("Step " + model.observables)
     if ave:
         log = []
     for i in range(nsteps):
@@ -55,7 +56,7 @@ def sim(model: object, nsteps: int, t: float, freq: int = 10000, ave: bool = Fal
                 v = model.observe()
                 print(f"{i:>12}", end="")
                 for value in v:
-                    print(f"{value:>9}", end="")
+                    print(f"{value:>12}", end="")
                 print()
         if ave:
             v = model.observe()
@@ -63,5 +64,6 @@ def sim(model: object, nsteps: int, t: float, freq: int = 10000, ave: bool = Fal
 
     if ave:
         averages = np.mean(log, axis=0)
-        return averages
-
+        stds = np.std(log, axis=0)
+        # TODO: return a dictionary instead
+        return averages, stds

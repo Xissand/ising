@@ -1,21 +1,22 @@
 import numpy as np
-import seaborn as sns
-import matplotlib.pyplot as plt
+
+# import seaborn as sns
+# import matplotlib.pyplot as plt
 from numba import jit
-from numba import int32, float64
-from numba.experimental import jitclass
+import numba as nb
 
 spec = [
-    ('n', int32),
-    ('h', float64),
-    ('j', float64),
-    ('energy', float64),
-    ('magnetism', float64),
-    ('states', float64[:, :]),
+    ("n", nb.types.int32),
+    ("h", nb.types.float64),
+    ("j", nb.types.float64),
+    ("energy", nb.types.float64),
+    ("magnetism", nb.types.float64),
+    ("states", nb.types.float64[:, :]),
+    ("observables", nb.types.string),
 ]
 
 
-@jitclass(spec)
+@nb.experimental.jitclass(spec)
 class Lattice:
     """Implements a 2d Ising lattice
 
@@ -44,7 +45,7 @@ class Lattice:
         self.j = j
         self.energy = 0
         self.magnetism = n ** 2
-        # self.observables = "TotEng AveEng Mgnt"
+        self.observables = "TotEng EngSq SpinEng Mgnt"
         self.states = np.ones((self.n, self.n))
         self._update_energy("full")
 
@@ -89,13 +90,17 @@ class Lattice:
             h = 0
             for i in range(self.n):
                 for j in range(self.n):
-                    left = (i - 1 if i > 0 else self.n - 1)
-                    right = (i + 1 if i < self.n - 1 else 0)
-                    up = (j + 1 if j < self.n - 1 else 0)
-                    down = (j - 1 if j > 0 else self.n - 1)
+                    left = i - 1 if i > 0 else self.n - 1
+                    right = i + 1 if i < self.n - 1 else 0
+                    up = j + 1 if j < self.n - 1 else 0
+                    down = j - 1 if j > 0 else self.n - 1
 
-                    h -= 0.5 * self.j * self.states[i, j] * (self.states[left, j] + self.states[right, j] +
-                                                             self.states[i, up] + self.states[i, down])
+                    h -= (
+                        0.5
+                        * self.j
+                        * self.states[i, j]
+                        * (self.states[left, j] + self.states[right, j] + self.states[i, up] + self.states[i, down])
+                    )
         elif kind == "single":
             h = self.energy
             delta = 2 * self._spin_energy(i, j)
@@ -118,8 +123,16 @@ class Lattice:
         Returns:
             Energy of the spin
         """
-        delta = -self.j * self.states[i, j] * (self.states[self.bc(i - 1), j] + self.states[self.bc(i + 1), j] +
-                                               self.states[i, self.bc(j + 1)] + self.states[i, self.bc(j - 1)])
+        delta = (
+            -self.j
+            * self.states[i, j]
+            * (
+                self.states[self.bc(i - 1), j]
+                + self.states[self.bc(i + 1), j]
+                + self.states[i, self.bc(j + 1)]
+                + self.states[i, self.bc(j - 1)]
+            )
+        )
 
         return delta
 
@@ -138,7 +151,8 @@ class Lattice:
         self._update_magnetism()
 
     def observe(self):
-        return self.energy, self.energy / self.n ** 2, self.magnetism
+        """Returns the observables of the model"""
+        return self.energy, self.energy ** 2, self.energy / self.n ** 2, self.magnetism
 
     def visualize(self, kind: str = "cool", filename: str = "") -> None:
         """Visualizes the lattice
@@ -154,6 +168,7 @@ class Lattice:
         """
         return self.states
         # TODO: Fix this not being possible due to numba
+        """
         if kind == "basic":
             for i in range(self.n):
                 for j in range(self.n):
@@ -169,3 +184,4 @@ class Lattice:
 
         else:
             raise ValueError("Wrong plot type")
+        """
