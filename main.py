@@ -7,7 +7,36 @@ import matplotlib.pyplot as plt
 from multiprocessing import Pool
 import seaborn as sns
 import matplotlib.animation as animation
-from timeit import default_timer as timer
+
+
+def en(t):
+    res = []
+    for i in range(1):
+        a = ising.Lattice(20)
+        a.shuffle()
+        mc.sim(a, 100000, t, freq=0)
+        b, bb = mc.sim(a, 100000, t, freq=0, ave=True)
+        m = float(b[2])
+        res.append([t, m])
+        del a
+    print(t)
+    return res
+
+
+def energy_map():
+    with Pool(8) as p:
+        a = p.map(en, np.arange(0.1, 10.1, 0.1))
+    t = []
+    e = []
+    for res in a:
+        for r in res:
+            t.append(r[0])
+            e.append(r[1])
+    plt.scatter(t, e, s=40, facecolor="none", edgecolors="blue")
+    plt.xlabel("Temperature")
+    plt.ylabel("Energy per spin")
+    plt.savefig("heat.png")
+    plt.show()
 
 
 def c(t):
@@ -23,7 +52,7 @@ def c(t):
     return res
 
 
-def specific_map():
+def heat_map():
     tt = []
     e2 = []
     e = []
@@ -39,6 +68,9 @@ def specific_map():
     e = np.array(e)
     ch = (e2 - e ** 2) / tt ** 2
     plt.scatter(tt, ch, s=40, facecolor="none", edgecolors="blue")
+    plt.xlabel("Temperature")
+    plt.ylabel("Heat capacity")
+    plt.savefig("heat.png")
     plt.show()
 
 
@@ -66,6 +98,9 @@ def magnetization_map():
             t.append(r[0])
             m.append(r[1])
     plt.scatter(t, m, s=40, facecolor="none", edgecolors="blue")
+    plt.xlabel("Temperature")
+    plt.ylabel("Average magnetization")
+    plt.savefig("magnetization.png")
     plt.show()
 
 
@@ -99,5 +134,6 @@ def anime(n, t, steps=int(1e5), freq=1):
 if __name__ == "__main__":
     # magnetization_map()
     # coolplot(50, 0.1)
-    anime(100, 0.1, freq=1000, steps=int(2e6))
-    # specific_map()
+    # anime(100, 0.1, freq=1000, steps=int(2e6))
+    # heat_map()
+    energy_map()
