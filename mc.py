@@ -1,10 +1,12 @@
 import random
 import numpy as np
 from scipy.ndimage.filters import uniform_filter1d
+import numba as nb
+import ising  # TODO: write a general model class instead
 
 
-# Note: maybe this should be provided by the model class
-def _update(model: object, t: float) -> None:
+@nb.njit()
+def _update(model: ising.Lattice, t: float) -> None:
     """Performs a MC move
 
     Chooses a random state to change, measures energy before and after. If energy change is negative, the move is
@@ -31,20 +33,21 @@ def _update(model: object, t: float) -> None:
             model.move(i)
 
 
-def sim(model: object, nsteps: int, t: float, freq: int = 10000, ave: bool = False):
+def sim(model: ising.Lattice, nsteps: int, t: float, freq: int = 10000, ave: bool = True):
     """Performs Monte Carlo simulations
 
     Args:
         model: the model to be simulated
         nsteps: number of steps
         t: temperature
-        freq: number of steps between console output. Set to 0 to disable output.
+        freq: number of steps between console output. Set to 0 to disable output
+        ave: average model observables throughout the simulation
 
     Returns:
-        nothing good
+        if ave is True: tuple of means and stds of observables - (means: ndarray, stds: ndarray)
     """
     random.seed()
-    # print(nsteps)
+    print(nsteps)
     if freq:
         print("Step " + model.observables)
     if ave:
@@ -67,3 +70,5 @@ def sim(model: object, nsteps: int, t: float, freq: int = 10000, ave: bool = Fal
         stds = np.std(log, axis=0)
         # TODO: return a dictionary instead
         return averages, stds
+    else:
+        return ()

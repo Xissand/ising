@@ -72,14 +72,14 @@ def magnetization_map():
 def coolplot(n, t):
     a = ising.Lattice(n)
     a.shuffle()
-    b, bb = mc.sim(a, int(1e6), t, ave=True)
+    b, bb = mc.sim(a, int(1e6), t, ave=True, freq=int(1e5))
 
     sns.heatmap(a.visualize(), vmin=-1, vmax=1)
     plt.show()
 
-    print(b[0])
-    # for name, value in zip(a.observables.split(" "),b):
-    #    print(f"{name:6} {value:.4f}")
+    # print(b[0])
+    for name, value in zip(a.observables.split(" "), b):
+        print(f"{name:6} {value:.4f}")
 
 
 def anime(n, t, steps=int(1e5), freq=1):
@@ -98,6 +98,9 @@ def anime(n, t, steps=int(1e5), freq=1):
 
 if __name__ == "__main__":
     # magnetization_map()
-    # coolplot(50, 0.1)
-    anime(100, 0.1, freq=1000, steps=int(2e6))
+    s = timer()
+    coolplot(20, 0.1)
+    e = timer()
+    print(s - e)
+    # anime(100, 0.1, freq=1000, steps=int(2e6))
     # specific_map()

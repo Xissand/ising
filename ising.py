@@ -127,10 +127,10 @@ class Lattice:
             -self.j
             * self.states[i, j]
             * (
-                self.states[self.bc(i - 1), j]
-                + self.states[self.bc(i + 1), j]
-                + self.states[i, self.bc(j + 1)]
-                + self.states[i, self.bc(j - 1)]
+                self.states[np.mod((i - 1), self.n), j]
+                + self.states[np.mod((i + 1), self.n), j]
+                + self.states[i, np.mod((j + 1), self.n)]
+                + self.states[i, np.mod((j - 1), self.n)]
             )
         )
 
