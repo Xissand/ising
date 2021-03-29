@@ -47,7 +47,7 @@ def sim(model: ising.Lattice, nsteps: int, t: float, freq: int = 10000, ave: boo
         if ave is True: tuple of means and stds of observables - (means: ndarray, stds: ndarray)
     """
     random.seed()
-    print(nsteps)
+    #print(nsteps)
     if freq:
         print("Step " + model.observables)
     if ave:

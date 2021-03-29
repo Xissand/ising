@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from multiprocessing import Pool
 import seaborn as sns
 import matplotlib.animation as animation
+import tqdm
 
 
 def en(t: float):
@@ -27,30 +28,33 @@ def en(t: float):
         m = float(b[2])
         res.append([t, m])
         del a
-    print(t)
+    # print(t)
     return res
 
 
 def energy_map(threads=8):
     """Plots energy per spin vs temperature
 
-    Measures and plots energy per spin for a 20x20 lattice from 0.1 to 10.1 degrees with a step of 0.1 degrees
+    Measures and plots energy per spin for a 20x20 lattice from 0.1 to 10.1 degrees with a step of 0.1 degrees,
+    each temperature is equilibrated for 1e5 steps and averaged for 1e5 steps. Resulting graph is saved to
+    results/energy.png
 
     Args:
         threads: number of threads to use in the computation
     """
     with Pool(threads) as p:
-        a = p.map(en, np.arange(0.1, 10.1, 0.1))
+        a = list(tqdm.tqdm(p.imap(en, np.arange(0.1, 10.1, 0.1)), total=100))
     t = []
     e = []
     for res in a:
         for r in res:
             t.append(r[0])
             e.append(r[1])
+    fig = plt.figure(figsize=(16, 9))
     plt.scatter(t, e, s=40, facecolor="none", edgecolors="blue")
     plt.xlabel("Temperature")
     plt.ylabel("Energy per spin")
-    plt.savefig("results/heat.png")
+    plt.savefig("results/energy.png")
     plt.show()
 
 
@@ -71,14 +75,16 @@ def c(t: float):
         v, dv = mc.sim(a, 100000, t, ave=True, freq=0)
         res.append([t, v[1], v[0]])
     del a
-    print(t)
+    # print(t)
     return res
 
 
 def heat_map(threads=8):
     """Plots heat capacity vs temperature
 
-    Measures and plots lattice heat capacity for a 16x16 lattice from 1.0 to 4.0 degrees with a step of 0.05
+    Measures and plots lattice heat capacity for a 16x16 lattice from 1.0 to 4.0 degrees with a step of 0.05. Each
+    temperature is simulated 10 times, equilibrating for 5e4 steps and averaging for 1e5 steps. Resulting graph is
+    saved to results/heat.png
 
     Args:
         threads: number of threads to use in the computation
@@ -87,7 +93,7 @@ def heat_map(threads=8):
     e2 = []
     e = []
     with Pool(threads) as p:
-        a = p.map(c, np.arange(1.0, 4.0, 0.05))
+        a = list(tqdm.tqdm(p.imap(c, np.arange(1.0, 4.0, 0.05)), total=60))
     for aa in a:
         for v in aa:
             tt.append(v[0])
@@ -97,6 +103,7 @@ def heat_map(threads=8):
     e2 = np.array(e2)
     e = np.array(e)
     ch = (e2 - e ** 2) / tt ** 2
+    fig = plt.figure(figsize=(16, 9))
     plt.scatter(tt, ch, s=40, facecolor="none", edgecolors="blue")
     plt.xlabel("Temperature")
     plt.ylabel("Heat capacity")
@@ -122,26 +129,30 @@ def test(t):
         m = float(b[3])
         res.append([t, m])
         del a
-    print(t)
+    # print(t)
     return res
 
 
 def magnetization_map(threads=8):
     """Plots average lattice magnetization vs temperature
 
-    Measures and plots lattice magnetisation for a 20x20 lattice from 0.1 to 10.1 degrees with a step of 0.1
+    Measures and plots lattice magnetisation for a 20x20 lattice from 0.1 to 10.1 degrees with a step of 0.1, simulating
+    each temperature 20 times. Equilibrates the lattice for 1e5 steps, then averages for 1e5 steps. Result is saved to
+    results/magnetization.png
 
     Args:
         threads: number of threads to use in the computation
     """
     with Pool(threads) as p:
-        a = p.map(test, np.arange(0.1, 10.1, 0.1))
+        a = list(tqdm.tqdm(p.imap(test, np.arange(0.1, 10.1, 0.1)), total=100))
     t = []
     m = []
     for res in a:
         for r in res:
             t.append(r[0])
             m.append(r[1])
+
+    fig = plt.figure(figsize=(16, 9))
     plt.scatter(t, m, s=40, facecolor="none", edgecolors="blue")
     plt.xlabel("Temperature")
     plt.ylabel("Average magnetization")
@@ -171,7 +182,7 @@ def coolplot(n, t):
 
 
 def anime(n, t, steps=int(1e5), freq=1):
-    """Creates an animation of latiice relaxation
+    """Creates an animation of lattice relaxation
 
     Simulates a lattice with given parameters, animates the relaxation and saves the result to results/animation.mp4
 
@@ -195,8 +206,8 @@ def anime(n, t, steps=int(1e5), freq=1):
 
 
 if __name__ == "__main__":
-    # magnetization_map()
-    coolplot(50, 0.1)
+    # magnetization_map(threads=4)
+    # coolplot(50, 0.1)
     # anime(100, 0.1, freq=1000, steps=int(2e6))
-    # heat_map()
+    heat_map()
     energy_map()
