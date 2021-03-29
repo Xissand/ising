@@ -9,7 +9,15 @@ import seaborn as sns
 import matplotlib.animation as animation
 
 
-def en(t):
+def en(t: float):
+    """A support function that simulates a lattice
+
+    Args:
+        t: temperature
+
+    Returns:
+        List of temperatures and corresponding spin energies
+    """
     res = []
     for i in range(1):
         a = ising.Lattice(20)
@@ -23,8 +31,15 @@ def en(t):
     return res
 
 
-def energy_map():
-    with Pool(8) as p:
+def energy_map(threads=8):
+    """Plots energy per spin vs temperature
+
+    Measures and plots energy per spin for a 20x20 lattice from 0.1 to 10.1 degrees with a step of 0.1 degrees
+
+    Args:
+        threads: number of threads to use in the computation
+    """
+    with Pool(threads) as p:
         a = p.map(en, np.arange(0.1, 10.1, 0.1))
     t = []
     e = []
@@ -35,11 +50,19 @@ def energy_map():
     plt.scatter(t, e, s=40, facecolor="none", edgecolors="blue")
     plt.xlabel("Temperature")
     plt.ylabel("Energy per spin")
-    plt.savefig("heat.png")
+    plt.savefig("results/heat.png")
     plt.show()
 
 
-def c(t):
+def c(t: float):
+    """A support function that simulates a lattice
+
+    Args:
+        t: temperature
+
+    Returns:
+        List of temperatures and corresponding averaged squares of energy and energies
+    """
     res = []
     for run in range(10):
         a = ising.Lattice(16)
@@ -52,11 +75,18 @@ def c(t):
     return res
 
 
-def heat_map():
+def heat_map(threads=8):
+    """Plots heat capacity vs temperature
+
+    Measures and plots lattice heat capacity for a 16x16 lattice from 1.0 to 4.0 degrees with a step of 0.05
+
+    Args:
+        threads: number of threads to use in the computation
+    """
     tt = []
     e2 = []
     e = []
-    with Pool(8) as p:
+    with Pool(threads) as p:
         a = p.map(c, np.arange(1.0, 4.0, 0.05))
     for aa in a:
         for v in aa:
@@ -70,11 +100,19 @@ def heat_map():
     plt.scatter(tt, ch, s=40, facecolor="none", edgecolors="blue")
     plt.xlabel("Temperature")
     plt.ylabel("Heat capacity")
-    plt.savefig("heat.png")
+    plt.savefig("results/heat.png")
     plt.show()
 
 
 def test(t):
+    """A support function that simulates a lattice
+
+    Args:
+        t: temperature
+
+    Returns:
+        List of temperatures and corresponding magnetization
+    """
     res = []
     for i in range(20):
         a = ising.Lattice(20)
@@ -88,8 +126,15 @@ def test(t):
     return res
 
 
-def magnetization_map():
-    with Pool(8) as p:
+def magnetization_map(threads=8):
+    """Plots average lattice magnetization vs temperature
+
+    Measures and plots lattice magnetisation for a 20x20 lattice from 0.1 to 10.1 degrees with a step of 0.1
+
+    Args:
+        threads: number of threads to use in the computation
+    """
+    with Pool(threads) as p:
         a = p.map(test, np.arange(0.1, 10.1, 0.1))
     t = []
     m = []
@@ -100,11 +145,19 @@ def magnetization_map():
     plt.scatter(t, m, s=40, facecolor="none", edgecolors="blue")
     plt.xlabel("Temperature")
     plt.ylabel("Average magnetization")
-    plt.savefig("magnetization.png")
+    plt.savefig("results/magnetization.png")
     plt.show()
 
 
 def coolplot(n, t):
+    """Plots a lattice
+
+    Simulates a lattice for 1e6 steps, plots the end result and prints observed system properties
+
+    Args:
+        n: lattice size
+        t: temperature
+    """
     a = ising.Lattice(n)
     a.shuffle()
     b, bb = mc.sim(a, int(1e6), t, ave=True, freq=int(1e5))
@@ -118,6 +171,16 @@ def coolplot(n, t):
 
 
 def anime(n, t, steps=int(1e5), freq=1):
+    """Creates an animation of latiice relaxation
+
+    Simulates a lattice with given parameters, animates the relaxation and saves the result to results/animation.mp4
+
+    Args:
+        n: lattice size
+        t: temperature
+        steps: number of Monte Carlo move attempts
+        freq: number of steps between animation frames
+    """
     a = ising.Lattice(n)
     a.shuffle()
     fig = plt.figure()
@@ -133,7 +196,7 @@ def anime(n, t, steps=int(1e5), freq=1):
 
 if __name__ == "__main__":
     # magnetization_map()
-    # coolplot(50, 0.1)
+    coolplot(50, 0.1)
     # anime(100, 0.1, freq=1000, steps=int(2e6))
     # heat_map()
     energy_map()
