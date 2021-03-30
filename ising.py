@@ -154,17 +154,10 @@ class Lattice:
         """Returns the observables of the model"""
         return self.energy, self.energy ** 2, self.energy / self.n ** 2, self.magnetism
 
-    def visualize(self, kind: str = "cool", filename: str = "") -> None:
-        """Visualizes the lattice
+    def visualize(self, kind: str = "cool", filename: str = "") -> np.ndarray:
+        """Returns an array of lattice states
 
-        Visualizes the lattice state either in terminal or graphically via seaborn heatmap.
-
-        Args:
-            kind: "basic" to print states to console, "cool" to use seaborn.heatmap
-            filename: Optional; filename to save the plot to. Leave empty to use interactive plot.
-
-        Raises:
-            ValueError: incorrect plot kind
+        Used to plot the lattice, but numba.jitclass doesn't support this atm.
         """
         return self.states
         # TODO: Fix this not being possible due to numba
